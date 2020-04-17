@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# PROVIDE: uddns
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# uddns_enable (bool):  Set to NO by default.
+#                       Set it to YES to enable it.
+# uddns_user:           The user account UnofficialDDNS daemon runs as what
+#                       you want it to be. It uses 'uddns' user by
+#                       default. Do not sets it as empty or it will run
+#                       as root.
+# uddns_group:          The group account UnofficialDDNS daemon runs as what
+#                       you want it to be. It uses 'uddns' group by
+#                       default. Do not sets it as empty or it will run
+#                       as wheel.
+# uddns_dir:            Directory where UnofficialDDNS lives.
+#                       Default: /usr/local/uddns
+# uddns_config:         Configuration file for UnofficialDDNS
+#                       Default checks for same directory of UnofficialDDNS
+
+. /etc/rc.subr
+
+name="uddns"
+rcvar=${name}_enable
+
+load_rc_config ${name}
+
+: ${uddns_enable:="NO"}
+: ${uddns_user:="uddns"}
+: ${uddns_group:="uddns"}
+: ${uddns_dir:="/usr/local/uddns"}
+: ${uddns_config:="${uddns_dir}/UnofficialDDNS.yaml"}
+
+pidfile="/var/run/UnofficialDDNS/UnofficialDDNS.pid"
+logfile="/var/log/UnofficialDDNS.log"
+command="/usr/local/bin/python2.7"
+command_args="${uddns_dir}/UnofficialDDNS.py -d -c ${uddns_config} --pid ${pidfile} -l ${logfile}"
+
+start_precmd="uddns_prestart"
+uddns_prestart() {
+        if [ -f ${pidfile} ]; then
+                rm -f ${pidfile}
+                echo "Removing stale pidfile."
+        elif [ ! -d ${pidfile%/*} ]; then
+                install -d -o ${uddns_user} -g ${uddns_group} ${pidfile%/*}
+        fi
+
+}
+
+run_rc_command "$1"
